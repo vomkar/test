@@ -1,0 +1,340 @@
+Repo:
+
+# yum-config-manager --add-repo http://www.example.com/example.repo
+Loaded plugins: product-id, refresh-packagekit, subscription-manager
+adding repo from: http://www.example.com/example.repo
+grabbing file http://www.example.com/example.repo to /etc/yum.repos.d/example.repo
+example.repo                                             |  413 B     00:00
+repo saved to /etc/yum.repos.d/example.repo
+
+#yum-config-manager --enable repository…
+
+# yum-config-manager --enable example\*
+Loaded plugins: product-id, refresh-packagekit, subscription-manager
+============================== repo: example ==============================
+[example]
+bandwidth = 0
+base_persistdir = /var/lib/yum/repos/x86_64/6Server
+baseurl = http://www.example.com/repo/6Server/x86_64/
+cache = 0
+cachedir = /var/cache/yum/x86_64/6Server/example
+[output truncated]
+
+#yum-config-manager --disable repository…
+
+
+
+
+Kickstart:
+
+# /etc/selinux/config to set SELINUX=disabled.
+  yum info httpd
+  yum -y install httpd
+  service httpd start
+  chkconfig –level 35 httpd on
+ Setting up Kickstart:
+    mkdir -p /var/www/html/centos/6/x64
+    mount /dev/cdrom /media
+    cp -r /media/* /var/www/html/centos/6/x64/
+ yum -y install system-config-kickstart.noarch
+
+ Booting Your Kickstart
+   vmlinuz initrd=initrd.img ks=http://192.168.200.131/ks.cfg
+
+
+
+
+Satellite:
+
+  Installation of the katello-client-bootstrap package on each Satellite and/or Capsule. 
+  This package places the bootstrap.py file in /var/www/html/pub/bootstrap.py, making it accessible via HTTP/HTTPS
+ to create bootstrap:
+  	# ./bootstrap.py -l admin \
+  	-s Satellite.example.com \
+  	-o Default_Organization \
+  	-L Default_Location \
+  	-g My_Hostgroup \
+  	-a My_Activation_Key
+
+from : /var/www/html/pub/bootstrap/
+  curl -Sks https://your-satellite.example.com/pub/bootstrap/bootstrap-EDITED-NAME.sh | /bin/bash
+  wget -qO - https://your-satellite.example.com/pub/bootstrap/bootstrap-EDITED-NAME.sh | /bin/bash
+
+
+
+
+Firewall:
+
+  # firewall-cmd --add-service=ntp --permanent
+  # firewall-cmd --reload
+  # systemctl status firewalld
+  # iptables-save
+  # systemctl disable firewalld
+  # systemctl enable firewalld
+  #firewall-cmd --list-all
+
+ For Example, to open TCP port 2222 :
+  # firewall-cmd --permanent --add-port=2222/tcp
+
+
+
+
+Docker:
+
+ #yum install docker
+ # systemctl start docker 
+ # systemctl status docker
+ # systemctl enable docker
+ # systemclt start docker.service
+ # systemctl status docker.service
+ # service docker start
+ # service docker status
+ # chkconfig docker on
+
+ex: run a container test image to verify if Docker works properly, by issuing the following command:
+ # docker run hello-world
+
+ # docker info
+ # docker version
+
+Download a Docker Image
+ In order to start and run a Docker container, first an image must be downloaded from Docker Hub on your host. Docker Hub offers a great deal of free images from its repositories.
+ To search for a Docker image, Ubuntu for instance, issue the following command:
+
+  # docker search ubuntu
+  # docker pull ubuntu  --> After you decided on what image you want to run based on your needs, download it locally by running 
+
+To list all the available Docker images on your host issue the following command:
+  # docker images
+
+If you don’t need a Docker image anymore and you want to remove it from the host issue the following command:
+
+  # docker rmi ubuntu
+
+In order to create and run a container, you need to run a command into a downloaded image, in this case Ubuntu, 
+so a basic command would be to display the distribution version file inside the container using cat command, 
+as in the following example:
+
+  # docker run ubuntu cat /etc/issue
+
+Running/stopped status docker:
+ # docker ps -l 
+ # docker start PID --> to start 
+
+In order to interactively connect into a container shell session, and run commands as you do on any other Linux session, issue the following command:
+
+# docker run -it ubuntu bash
+
+
+
+
+
+Pacemaker:
+
+Step 1 — Configuring Name Resolution
+First, we need to make sure that both hosts can resolve the hostname of the two cluster nodes. 
+To accomplish that, we'll add entries to the /etc/hosts file. Follow this step on both webnode01 and webnode02.
+
+Open /etc/hosts with nano or your favorite text editor.
+
+sudo nano /etc/hosts
+Add the following entries to the end of the file.
+
+/etc/hosts
+your_first_server_ip webnode01.example.com webnode01
+your_second_server_ip webnode02.example.com webnode02
+Save and close the file.
+
+Step 2 — Installing Apache
+In this section, we will install the Apache web server. You have to complete this step on both hosts.
+
+First, install Apache.
+
+sudo yum install httpd
+The Apache resource agent uses the Apache server status page for checking the health of the Apache service. You have to activate the status page by creating the file /etc/httpd/conf.d/status.conf.
+
+sudo nano /etc/httpd/conf.d/status.conf
+Paste the following directive in this file. These directives allow the access to the status page from localhost but not from any other host.
+
+/etc/httpd/conf.d/status.conf
+<Location /server-status>
+   SetHandler server-status
+   Order Deny,Allow
+   Deny from all
+   Allow from 127.0.0.1
+</Location>
+Save and close the file.
+
+Step 3 — Installing Pacemaker
+
+  # sudo yum install pacemaker pcs
+
+Now we have to start the pcs daemon, which is used for synchronizing the Corosync configuration across the nodes.
+
+ # sudo systemctl start pcsd.service
+
+In order that the daemon gets started after every reboot, we will also enable the service.
+
+ # sudo systemctl enable pcsd.service
+
+After you have installed these packages, there will be a new user on your system called hacluster. After the installation, remote login is disabled for this user. 
+For tasks like synchronizing the configuration or starting services on other nodes, we have to set the same password for this user.
+
+ # sudo passwd hacluster
+
+Step 4 — Configuring Pacemaker
+Next, we'll allow cluster traffic in FirewallD to allow our hosts to communicate.
+
+First, check if FirewallD is running.
+
+ # sudo firewall-cmd --state
+ # sudo systemctl start firewalld.service
+
+You'll need to do this on both hosts. Once it's running, add the high-availability service to FirewallD.
+
+ #sudo firewall-cmd --permanent --add-service=high-availability
+ # sudo firewall-cmd --reload
+
+Now that our two hosts can talk to each other, we can set up the authentication between the two nodes by running this command on one host 
+(in our case, webnode01).
+
+ # sudo pcs cluster auth webnode01 webnode02
+   Username: hacluster
+   You should see the following output:
+
+Next, we'll generate and synchronize the Corosync configuration on the same host. Here, 
+we'll name the cluster webcluster, but you can call it whatever you like.
+
+ # sudo pcs cluster setup --name webcluster webnode01 webnode02
+
+The corosync configuration is now created and distributed across all nodes. The configuration is stored in the file /etc/corosync/corosync.conf.
+
+Step 5 — Starting the Cluster
+The cluster can be started by running the following command on webnode01.
+
+ # sudo pcs cluster start --all
+To ensure that Pacemaker and corosync starts at boot, we have to enable the services on both hosts.
+
+ # sudo systemctl enable corosync.service
+ # sudo systemctl enable pacemaker.service
+We can now check the status of the cluster by running the following command on either host.
+
+ #sudo pcs status
+Check that both hosts are marked as online in the output.
+
+
+Note: After the first setup, it can take some time before the nodes are marked as online.
+
+Step 6 — Disabling STONITH and Ignoring Quorum
+What is STONITH?
+You will see a warning in the output of pcs status that no STONITH devices are configured and STONITH is not disabled:
+
+ # sudo pcs property set stonith-enabled=false
+
+Note: If you plan to use Pacemaker in a production environment, you should plan a STONITH implementation depending on your environment and keep it enabled.
+
+What is Quorum?
+A cluster has quorum when more than half of the nodes are online. Pacemaker's default behavior is to stop all resources if the cluster does not have quorum.
+However, this does not make sense in a two-node cluster; the cluster will lose quorum if one node fails.
+
+For this tutorial, we will tell Pacemaker to ignore quorum by setting the no-quorum-policy:
+
+ # sudo pcs property set no-quorum-policy=ignore
+
+Step 7 — Configuring the Virtual IP address
+
+ # sudo pcs resource create Cluster_VIP ocf:heartbeat:IPaddr2 ip=127.0.0.2 cidr_netmask=24 op monitor interval=20s
+Next, check the status of the resource.
+
+ # sudo pcs status
+
+
+ Cluster_VIP    (ocf::heartbeat:IPaddr2):   Started webnode01
+...
+The virtual IP address is active on the host webnode01.
+
+Step 8 — Adding the Apache Resource
+
+ # sudo pcs resource create WebServer ocf:heartbeat:apache configfile=/etc/httpd/conf/httpd.conf statusurl="http://127.0.0.1/server-status" op monitor interval=20s
+
+ # sudo pcs status
+
+
+Step 9 — Configuring Colocation Constraints
+
+ # sudo pcs constraint colocation add WebServer Cluster_VIP INFINITY
+
+sudo pcs status
+
+
+
+
+Recommendations for testing:
+
+
+[root@plsaasnwas03 ~]# more /proc/sys/kernel/shmmax
+33554432   -- this should be greater then VMM heap size.
+[root@plsaasnwas03 ~]#
+
+
+[root@plsaasnwas03 ~]# more /proc/sys/kernel/shmmni
+4096
+[root@plsaasnwas03 ~]#
+
+
+[root@plsaasnwas05 vm]# cat /proc/sys/vm/swappiness
+60
+[root@plsaasnwas05 vm]#
+
+Turn down swappiness (/etc/sysctl.conf swappiness=10)
+Adjust SHMMAX to be larger than the configured java heap size. 
+
+
+one@onezero:~$ cat /proc/sys/vm/swappiness
+60
+
+
+As I have 4 GB of RAM, so I'd like to turn that down to 10 or 15. The swap file will then only be used when my RAM usage is around 80 or 90 percent. 
+To change the system swappiness value, open /etc/sysctl.conf as root. Then, change or add this line to the file:
+vm.swappiness = 10
+
+
+Reboot for the change to take effect
+
+You can also change the value while your system is still running
+sysctl vm.swappiness=10
+
+
+you can also clear your swap by running swapoff -a and then swapon -a as root instead of rebooting to achieve the same effect.
+
+To calculate your swap Formula 
+free -m (total) / 100 = A
+
+A * 10
+
+root@onezero:/home/one# free -m
+             total       used       free     shared    buffers     cached
+Mem:          3950       2262       1687          0        407        952
+-/+ buffers/cache:        903       3047
+Swap:         1953          0       1953
+
+
+
+so total is 3950 / 100 = 39.5 * 10 = 395
+
+so what it mean is that when 10 % 395 MB of ram left then it start using swapiness
+
+Scan New Luns:
+-----------------
+
+
+ echo 1 > /sys/class/scsi_device/2:0:3:0/device/rescan
+or 
+echo "- - -" > /sys/class/scsi_host/host0/scan
+
+pvscan
+pvresize /dev/sdc
+fdisk -l
+
+lvextend -L +30G /dev/mapper/appvg-applv
+resize2fs /dev/mapper/appvg-applv
