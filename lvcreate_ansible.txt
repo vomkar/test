@@ -1,0 +1,23 @@
+---
+ - hosts: centos1
+   user: root
+   tasks:
+        - name: vgcreate
+		  lvg:
+		        vg: vgdata
+				pvs: /dev/sdb
+		- name: lvcreate
+		  lvol:
+		        vg: vgdata
+                lv: newlv
+                size: 150M
+	    - name: create file system
+		  filesystem:
+		        fstype: ext4
+				dev: /dev/vgdata/newlv
+		- name: mount logical volume
+		  mount:
+		        name: /newfs
+				src: /dev/vgdata/newlv
+				fstype: ext4
+				state: mounted
